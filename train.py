@@ -23,6 +23,10 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
+
+from dep_parser import DepParser
+
+
 import datasets
 import numpy as np
 from datasets import load_dataset, load_metric
@@ -206,7 +210,7 @@ def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
-
+    dependency_parser = DepParser()
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
@@ -436,6 +440,8 @@ def main():
             (examples[sentence1_key],) if sentence2_key is None else (examples[sentence1_key], examples[sentence2_key])
         )
         result = tokenizer(*args, padding=padding, max_length=max_seq_length, truncation=True)
+        result["parsed_sentence1"] = dependency_parser.parsing(examples[sentence1_key])
+        result["bert_to_parser"] = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids'].flatten()))
 
         # Map labels to IDs (not necessary for GLUE tasks)
         if label_to_id is not None and "label" in examples:
