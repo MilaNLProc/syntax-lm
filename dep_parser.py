@@ -151,20 +151,11 @@ class DepParser():
             phrase = list()
             pos_l = list()
             parents = list()
-            '''
-            for line in tree:
-                res_words = line.split('\t') #split line like " 5	todays	_	S	S	_	4	_	_	_ "
-                #if int(res_words[6]) != -1: # -1 is values assigned to non-syntactical words
-                phrase.append(preprocess_w(res_words[1]))
-
-                parents.append(int(res_words[6]) - 1) #append parents of the word (decreased by 1, because in the treebank indeces start from 1)
-                pos.append(global_dict.PoS_tags[res_words[3]])  #append POS tag assigned
-            '''
-
             preds = self.predictor.predict(s)
             words = preds["words"]
             poss = preds["pos"]
             deps = preds["predicted_dependencies"]
+            #PUT HERE RANDOM STUFF IN FUTURE
             heads = preds["predicted_heads"]
             for word, pos, dep, head in zip(words, poss, deps, heads):
                 phrase.append(word)
