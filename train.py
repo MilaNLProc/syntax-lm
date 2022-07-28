@@ -436,11 +436,19 @@ def main():
 
     def preprocess_function(examples):
         # Tokenize the texts
+        parse1 = dependency_parser.parsing(examples[sentence1_key])
+        parse2 = parse1
+        if sentence2_key is not None:
+            parse2 = dependency_parser.parsing(examples[sentence2_key])
+
+        #len_tree1 = len(parse1["words"])
+        #len_tree2 = len(parse2["words"])
+
         args = (
-            (examples[sentence1_key],) if sentence2_key is None else (examples[sentence1_key], examples[sentence2_key])
+            (parse1["words"],) if sentence2_key is None else (parse1["words"], parse2["words"])
         )
-        result = tokenizer(*args, padding=padding, max_length=max_seq_length, truncation=True)
-        result["parsed_sentence1"] = dependency_parser.parsing(examples[sentence1_key])
+        result = tokenizer(*args, padding='max_length', max_length=max_seq_length, truncation=True, is_split_into_words=True)
+        result["parsed_sentence1"] = parse1
         result["bert_to_parser"] = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids'].flatten()))
 
         # Map labels to IDs (not necessary for GLUE tasks)

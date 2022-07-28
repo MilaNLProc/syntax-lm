@@ -185,7 +185,7 @@ class DepParser():
         list_divisors = list()
 
         for tokens_bert in list_tokens_bert:
-            idx_tok = 0
+            idx_tok = -1
             map_tokbert_to_tokparse = list()
             # print(self.tokenizer.convert_ids_to_tokens(encoding['input_ids'].flatten()))
             for s in tokens_bert:
