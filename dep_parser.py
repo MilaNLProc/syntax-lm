@@ -52,7 +52,7 @@ def divide_intraphrase_trees(words, poss, parents):
         tree.sort() #retrieve indeces of the words in the tree
         words_root.append((np.array(words)[np.array(tree).astype(int)]).tolist()) #extract words associated to the tree
         poss_root.append((np.array(poss)[np.array(tree).astype(int)]).tolist()) #extract  pos tags associated to the tree
-        new_par = (np.array(parents[i])[np.array(tree).astype(int)]).tolist() #extract parents associated to the tree
+        new_par = (np.array(parents)[np.array(tree).astype(int)]).tolist() #extract parents associated to the tree
         parents_root.append(conv_parents(new_par, tree)) #convert indeces of parents from tweet "referment" to tree referment
 
     return words_root, poss_root, parents_root
