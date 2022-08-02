@@ -120,7 +120,7 @@ class DepParser():
 
     def parsing(self, sentence):
         phrase = list()
-        pos = list()
+        pos_l = list()
         parents = list()
         preds = self.predictor.predict(sentence)
         words = preds["words"]
@@ -132,9 +132,9 @@ class DepParser():
         for word, pos, dep, head in zip(words, poss, deps, heads):
             phrase.append(word)
             parents.append(int(head) - 1)
-            pos.append(PoS_tags[pos])
+            pos_l.append(PoS_tags[pos])
 
-        words, poss, parents = divide_intraphrase_trees(phrase, pos, parents)
+        words, poss, parents = divide_intraphrase_trees(phrase, pos_l, parents)
         visit_order, parent_visit_order = visit_tree(parents)  # take vectors for order of visiting
 
         words, poss, visit_order, parent_visit_order, pad_mask_trees = preprocess(words, poss, visit_order, parent_visit_order, 20, 1)
