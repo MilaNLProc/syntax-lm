@@ -168,14 +168,11 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
         std = torch.Tensor(range(outputs.last_hidden_state.size()[0])).long()
 
         for idx in range(outputs.last_hidden_state.size()[1]):
-            word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] = word_representation[std,map_tokbert_to_tokparse[:,
-                                                        idx].long(), :] + outputs.last_hidden_state[:, idx, :]
+            word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] = word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] + outputs.last_hidden_state[:, idx, :]
 
         for idx in range(word_representation.size()[1]):
-            word_representation[:, idx, :] = word_representation[:, idx, :] * map_attention[:, idx].expand(
-                map_attention[:, idx].size()[0], word_representation[:, idx, :].size()[1])
-            word_representation[:, idx, :] = word_representation[:, idx, :] / divisors[:, idx].expand(
-                divisors[:, idx].size()[0], word_representation[:, idx, :].size()[1])
+            word_representation[:, idx, :] = word_representation[:, idx, :] * map_attention[:, idx].expand(word_representation[:, idx, :].size()[1])
+            word_representation[:, idx, :] = word_representation[:, idx, :] / divisors[:, idx].expand(word_representation[:, idx, :].size()[1])
 
         # extract tweet "syntactical" embedding and give it in input to final MLP
         class_vector = self.forward_syntax(batch_size, word_representation, visit_order,
