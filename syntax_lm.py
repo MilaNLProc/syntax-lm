@@ -71,7 +71,7 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-    def forward_syntax(self, batch_size, n_trees, word, pos, visit_order, parent_visit_order, pad_mask_trees):
+    def forward_syntax(self, batch_size, word, visit_order, parent_visit_order, pad_mask_trees):
         # initialize tensor to store final representation
         syntax_vector = torch.Tensor.zero_(torch.Tensor(batch_size, self.size))
         # from [tweet, tweet_trees, node] to [trees, node], for each type of data
@@ -113,15 +113,10 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
             x_vect[std, pvo] = self.act_move_up(self.move_up(h_vect[std, pvo]))
 
         # OUTPUT: x vector assigned to the #batch_size roots
-        x = x_vect[std, visit_order[:, 0].long()]
+        syntax_vector = x_vect[std, visit_order[:, 0].long()]
         # transform from [trees, vector] to [tweets, tweet_trees, vector]
-        x = x.reshape(batch_size, n_trees, self.size)
         # Final LSTM!
-        c = torch.Tensor.zero_(torch.Tensor(x.size()[0], self.size))
-        for i in range(x.size()[1]):
-            syntax_vector, c = self.sentence_lstm(self.act_root(self.root_to_sent(x[:, i, :])), (syntax_vector, c))
-            syntax_vector = syntax_vector * pad_mask_trees[:, i].expand(x.size()[0], self.size)
-            c = c * pad_mask_trees[:, i].expand(x.size()[0], self.size)
+
         return syntax_vector
 
 
@@ -168,22 +163,7 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
 
         batch_size = input_ids.size()[0]
         # number of trees for each tweet
-        n_trees = input_ids.size()[1]
         # number of tokens for each tree
-        n_tokens_bert = input_ids.size()[2]
-        # number of tokens for each tree
-        n_tokens_tree = pos.size()[2]
-
-        input_ids = input_ids.reshape(batch_size * n_trees, n_tokens_bert)
-        attention_mask = attention_mask.reshape(batch_size * n_trees, n_tokens_bert)
-        map_tokbert_to_tokparse = map_tokbert_to_tokparse.reshape(batch_size * n_trees, n_tokens_bert)
-        divisors = divisors.reshape(batch_size * n_trees, n_tokens_bert, 1)
-        map_attention = map_attention.reshape(batch_size * n_trees, n_tokens_bert, 1)
-
-        pos = pos.reshape(batch_size * n_trees, n_tokens_tree)
-        visit_order = visit_order.reshape(batch_size * n_trees, n_tokens_tree)
-        parent_visit_order = parent_visit_order.reshape(batch_size * n_trees, n_tokens_tree)
-
         word_representation = torch.Tensor.zero_(torch.Tensor(outputs.last_hidden_state.size()))
         std = torch.Tensor(range(outputs.last_hidden_state.size()[0])).long()
 
@@ -198,7 +178,7 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
                 divisors[:, idx].size()[0], word_representation[:, idx, :].size()[1])
 
         # extract tweet "syntactical" embedding and give it in input to final MLP
-        class_vector = self.forward_syntax(batch_size, n_trees, word_representation, pos, visit_order,
+        class_vector = self.forward_syntax(batch_size, word_representation, visit_order,
                                            parent_visit_order, pad_mask_trees)
         #sequence_output = outputs[0]
         logits = self.classifier(class_vector)
