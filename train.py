@@ -441,19 +441,21 @@ def main():
         if sentence2_key is not None:
             parse2 = dependency_parser.parsing(examples[sentence2_key])
 
-        #len_tree1 = len(parse1["words"])
-        #len_tree2 = len(parse2["words"])
+        # len_tree1 = len(parse1["words"])
+        # len_tree2 = len(parse2["words"])
 
         args = (
             (parse1["words"],) if sentence2_key is None else (parse1["words"], parse2["words"])
         )
-        result = tokenizer(*args, padding='max_length', max_length=max_seq_length, truncation=True, is_split_into_words=True)
-        result["parsed_sentence1"] = parse1
-        result["parsed_sentence2"] = parse1
-        if sentence2_key is not None:
-            result["parsed_sentence2"] = parse2
-
-        result["bert_to_parser"] = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids']))
+        result = tokenizer(*args, padding='max_length', max_length=10, truncation=True, is_split_into_words=True)
+        out_map = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids']))
+        result['map_tokbert_to_tokparse'] = out_map['map_tokbert_to_tokparse']
+        result['divisors'] = out_map['divisors']
+        result['map_attention'] = out_map['map_attention']
+        result['pos'] = parse1['poss']
+        result['visit_order'] = parse1['visit_order']
+        result['parent_visit_order'] = parse1['parent_visit_order']
+        result['pad_mask_trees'] = parse1['pad_mask_trees']
 
         # Map labels to IDs (not necessary for GLUE tasks)
         if label_to_id is not None and "label" in examples:
