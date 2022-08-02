@@ -449,6 +449,10 @@ def main():
         )
         result = tokenizer(*args, padding='max_length', max_length=max_seq_length, truncation=True, is_split_into_words=True)
         result["parsed_sentence1"] = parse1
+        result["parsed_sentence2"] = parse1
+        if sentence2_key is not None:
+            result["parsed_sentence2"] = parse2
+
         result["bert_to_parser"] = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids'].flatten()))
 
         # Map labels to IDs (not necessary for GLUE tasks)
