@@ -453,7 +453,7 @@ def main():
         if sentence2_key is not None:
             result["parsed_sentence2"] = parse2
 
-        result["bert_to_parser"] = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids'].flatten()))
+        result["bert_to_parser"] = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids']))
 
         # Map labels to IDs (not necessary for GLUE tasks)
         if label_to_id is not None and "label" in examples:

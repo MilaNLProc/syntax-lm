@@ -147,38 +147,30 @@ class DepParser():
             'pad_mask_trees': pad_mask_trees  # pad mask for trees
         }
 
-    def map_tokens(self, list_tokens_bert):
-        list_map_tokbert_to_tokparse = list()
-        list_map_attention = list()
-        list_divisors = list()
-        list_map_tree = list()
-        for tokens_bert in list_tokens_bert:
-            idx_tok = -1
-            tree_idx = 0
-            map_tree = list()
-            map_tokbert_to_tokparse = list()
-            # print(self.tokenizer.convert_ids_to_tokens(encoding['input_ids'].flatten()))
-            for s in tokens_bert:
-                if s != "<s>" and s != "</s>" and s != "<pad>":
-                    if s.startswith('Ġ'):
-                        idx_tok = idx_tok + 1
-                    map_tokbert_to_tokparse.append(int(idx_tok))
-                    map_tree.append(tree_idx)
-                else:
-                    map_tokbert_to_tokparse.append(int(-1))
+    def map_tokens(self, tokens_bert):
 
-            divisors = [[1]] * len(map_tokbert_to_tokparse)
-            map_attention = [[0]] * len(map_tokbert_to_tokparse)
+        idx_tok = -1
+        tree_idx = 0
+        map_tree = list()
+        map_tokbert_to_tokparse = list()
+        # print(self.tokenizer.convert_ids_to_tokens(encoding['input_ids'].flatten()))
+        for s in tokens_bert:
+            if s != "<s>" and s != "</s>" and s != "<pad>":
+                if s.startswith('Ġ'):
+                    idx_tok = idx_tok + 1
+                map_tokbert_to_tokparse.append(int(idx_tok))
+                map_tree.append(tree_idx)
+            else:
+                map_tokbert_to_tokparse.append(int(-1))
 
-            for d in range(len(map_tokbert_to_tokparse)):
-                if map_tokbert_to_tokparse[d] >= 0:
-                    map_attention[map_tokbert_to_tokparse[d]] = [1]
-                    if map_tokbert_to_tokparse[d - 1] == map_tokbert_to_tokparse[d]:
-                        divisors[map_tokbert_to_tokparse[d]] = [divisors[map_tokbert_to_tokparse[d]][0] + 1]
+        divisors = [[1]] * len(map_tokbert_to_tokparse)
+        map_attention = [[0]] * len(map_tokbert_to_tokparse)
 
-            list_map_tokbert_to_tokparse.append(map_tokbert_to_tokparse)
-            list_map_attention.append(map_attention)
-            list_divisors.append(divisors)
+        for d in range(len(map_tokbert_to_tokparse)):
+            if map_tokbert_to_tokparse[d] >= 0:
+                map_attention[map_tokbert_to_tokparse[d]] = [1]
+                if map_tokbert_to_tokparse[d - 1] == map_tokbert_to_tokparse[d]:
+                    divisors[map_tokbert_to_tokparse[d]] = [divisors[map_tokbert_to_tokparse[d]][0] + 1]
         '''
         list_map_tokbert_to_tokparse = list()
         list_map_attention = list()
@@ -211,7 +203,7 @@ class DepParser():
             list_divisors.append(divisors)
             '''
         return {
-            'map_tokbert_to_tokparse': list_map_tokbert_to_tokparse,
-            'divisors': list_divisors,
-            'map_attention': list_map_attention  # extract visit order
+            'map_tokbert_to_tokparse': map_tokbert_to_tokparse,
+            'divisors': divisors,
+            'map_attention': map_attention  # extract visit order
         }
