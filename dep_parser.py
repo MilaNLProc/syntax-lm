@@ -140,11 +140,11 @@ class DepParser():
         words, poss, visit_order, parent_visit_order, pad_mask_trees = preprocess(words, poss, visit_order, parent_visit_order, 20, 1)
 
         return {
-            'words': words,
-            'poss': poss,  # POS tags
-            'visit_order': visit_order,  # extract visit order
-            'parent_visit_order': parent_visit_order,  # parent of node visited
-            'pad_mask_trees': pad_mask_trees  # pad mask for trees
+            'words': words[0],
+            'poss': poss[0],  # POS tags
+            'visit_order': visit_order[0],  # extract visit order
+            'parent_visit_order': parent_visit_order[0],  # parent of node visited
+            'pad_mask_trees': pad_mask_trees[0]  # pad mask for trees
         }
 
     def map_tokens(self, tokens_bert):
@@ -203,7 +203,7 @@ class DepParser():
             list_divisors.append(divisors)
             '''
         return {
-            'map_tokbert_to_tokparse': map_tokbert_to_tokparse,
-            'divisors': divisors,
-            'map_attention': map_attention  # extract visit order
+            'map_tokbert_to_tokparse': map_tokbert_to_tokparse[0],
+            'divisors': divisors[0],
+            'map_attention': map_attention[0]  # extract visit order
         }
