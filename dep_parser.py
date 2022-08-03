@@ -203,7 +203,7 @@ class DepParser():
             list_divisors.append(divisors)
             '''
         return {
-            'map_tokbert_to_tokparse': map_tokbert_to_tokparse[0],
-            'divisors': divisors[0],
-            'map_attention': map_attention[0]  # extract visit order
+            'map_tokbert_to_tokparse': map_tokbert_to_tokparse,
+            'divisors': divisors,
+            'map_attention': map_attention  # extract visit order
         }
