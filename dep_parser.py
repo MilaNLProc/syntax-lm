@@ -170,7 +170,7 @@ class DepParser():
             if map_tokbert_to_tokparse[d] >= 0:
                 map_attention[map_tokbert_to_tokparse[d]] = 1
                 if map_tokbert_to_tokparse[d - 1] == map_tokbert_to_tokparse[d]:
-                    divisors[map_tokbert_to_tokparse[d]] = divisors[map_tokbert_to_tokparse[d]][0] + 1
+                    divisors[map_tokbert_to_tokparse[d]] = divisors[map_tokbert_to_tokparse[d]] + 1
         '''
         list_map_tokbert_to_tokparse = list()
         list_map_attention = list()
