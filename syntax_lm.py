@@ -23,7 +23,8 @@ class RobertaClassificationHead(nn.Module):
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
     def forward(self, features, **kwargs):
-        x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
+        #x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
+        x = features
         x = self.dropout(x)
         x = self.dense(x)
         x = torch.tanh(x)
@@ -170,6 +171,12 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
         for idx in range(outputs.last_hidden_state.size()[1]):
             word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] = word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] + outputs.last_hidden_state[:, idx, :]
 
+        batch_size = input_ids.size()[0]
+        n_tokens_bert = input_ids.size()[1]
+
+        #input_ids = input_ids.reshape(batch_size * n_trees, n_tokens_bert)
+        map_attention = map_attention.reshape(batch_size, n_tokens_bert, 1)
+        divisors = divisors.reshape(batch_size, n_tokens_bert, 1) 
         for idx in range(word_representation.size()[1]):
             print(idx)
             word_representation[:, idx, :] = word_representation[:, idx, :] * map_attention[:, idx].expand(

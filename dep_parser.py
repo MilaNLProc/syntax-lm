@@ -118,7 +118,7 @@ class DepParser():
     def __init__(self):
         self.predictor = load_predictor("structured-prediction-biaffine-parser")
 
-    def parsing(self, sentence):
+    def parsing(self, sentence, max_length):
         phrase = list()
         pos_l = list()
         parents = list()
@@ -137,7 +137,7 @@ class DepParser():
         words, poss, parents = divide_intraphrase_trees(phrase, pos_l, parents)
         visit_order, parent_visit_order = visit_tree(parents)  # take vectors for order of visiting
 
-        words, poss, visit_order, parent_visit_order, pad_mask_trees = preprocess(words, poss, visit_order, parent_visit_order, 20, 1)
+        words, poss, visit_order, parent_visit_order, pad_mask_trees = preprocess(words, poss, visit_order, parent_visit_order, max_length, 1)
 
         return {
             'words': words,

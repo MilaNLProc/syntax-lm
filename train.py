@@ -368,6 +368,7 @@ def main():
         use_fast=model_args.use_fast_tokenizer,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        add_prefix_space=True #added for this application
     )
     model = AutoModelForSequenceClassification.from_pretrained(
         model_args.model_name_or_path,
@@ -435,11 +436,12 @@ def main():
     max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
     def preprocess_function(examples):
+        max_length = 10
         # Tokenize the texts
-        parse1 = dependency_parser.parsing(examples[sentence1_key])
+        parse1 = dependency_parser.parsing(examples[sentence1_key], max_length=max_length)
         parse2 = parse1
         if sentence2_key is not None:
-            parse2 = dependency_parser.parsing(examples[sentence2_key])
+            parse2 = dependency_parser.parsing(examples[sentence2_key], max_length=max_length)
 
         # len_tree1 = len(parse1["words"])
         # len_tree2 = len(parse2["words"])
@@ -447,7 +449,7 @@ def main():
         args = (
             (parse1["words"],) if sentence2_key is None else (parse1["words"], parse2["words"])
         )
-        result = tokenizer(*args, padding='max_length', max_length=10, truncation=True, is_split_into_words=True)
+        result = tokenizer(*args, padding='max_length', max_length=max_length, truncation=True, is_split_into_words=True)
         out_map = dependency_parser.map_tokens(tokenizer.convert_ids_to_tokens(result['input_ids']))
         result['map_tokbert_to_tokparse'] = out_map['map_tokbert_to_tokparse']
         result['divisors'] = out_map['divisors']
