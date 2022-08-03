@@ -171,7 +171,7 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
             word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] = word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] + outputs.last_hidden_state[:, idx, :]
 
         for idx in range(word_representation.size()[1]):
-            word_representation[:, idx, :] = word_representation[:, idx, :] * map_attention[:, idx].expand(
+            word_representation[:, idx, :] = word_representation[:, idx, :] * map_attention[:,  0, idx].expand(
                 map_attention[:, 0, idx].size()[0], word_representation[:, idx, :].size()[1])
             word_representation[:, idx, :] = word_representation[:, idx, :] / divisors[:, 0, idx].expand(
                 divisors[:, 0, idx].size()[0], word_representation[:, idx, :].size()[1])
