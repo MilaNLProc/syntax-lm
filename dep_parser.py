@@ -97,9 +97,9 @@ def preprocess(words, poss, visit_order, parent_visit_order, size, max_root):
         poss.insert(0, [])
         visit_order.insert(0, [])
         parent_visit_order.insert(0, [])
-        pad_flag.append([0])
+        pad_flag.append(0)
     for p in range(orig_len):
-        pad_flag.append([1])
+        pad_flag.append(1)
 
     for i in range(len(poss)):
         w = ' '.join(words[i])
@@ -163,14 +163,14 @@ class DepParser():
             else:
                 map_tokbert_to_tokparse.append(int(-1))
 
-        divisors = [[1]] * len(map_tokbert_to_tokparse)
-        map_attention = [[0]] * len(map_tokbert_to_tokparse)
+        divisors = [1] * len(map_tokbert_to_tokparse)
+        map_attention = [0] * len(map_tokbert_to_tokparse)
 
         for d in range(len(map_tokbert_to_tokparse)):
             if map_tokbert_to_tokparse[d] >= 0:
-                map_attention[map_tokbert_to_tokparse[d]] = [1]
+                map_attention[map_tokbert_to_tokparse[d]] = 1
                 if map_tokbert_to_tokparse[d - 1] == map_tokbert_to_tokparse[d]:
-                    divisors[map_tokbert_to_tokparse[d]] = [divisors[map_tokbert_to_tokparse[d]][0] + 1]
+                    divisors[map_tokbert_to_tokparse[d]] = divisors[map_tokbert_to_tokparse[d]][0] + 1
         '''
         list_map_tokbert_to_tokparse = list()
         list_map_attention = list()
