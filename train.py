@@ -436,7 +436,8 @@ def main():
     max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
     def preprocess_function(examples):
-        max_length = 10
+        max_length = max_seq_length
+        #print(examples[sentence1_key])
         # Tokenize the texts
         parse1 = dependency_parser.parsing(examples[sentence1_key], max_length=max_length)
         parse2 = parse1
@@ -467,7 +468,7 @@ def main():
     with training_args.main_process_first(desc="dataset map pre-processing"):
         raw_datasets = raw_datasets.map(
             preprocess_function,
-            batched=True,
+            batched=False,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on dataset",
         )
