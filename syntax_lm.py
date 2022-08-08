@@ -10,6 +10,7 @@ from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from transformers.models.roberta import RobertaPreTrainedModel, RobertaModel
 from transformers.modeling_outputs import SequenceClassifierOutput
 
+
 class RobertaClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -17,13 +18,15 @@ class RobertaClassificationHead(nn.Module):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         classifier_dropout = (
-            config.classifier_dropout if config.classifier_dropout is not None else config.hidden_dropout_prob
+            config.classifier_dropout
+            if config.classifier_dropout is not None
+            else config.hidden_dropout_prob
         )
         self.dropout = nn.Dropout(classifier_dropout)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
     def forward(self, features, **kwargs):
-        #x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
+        # x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
         x = features
         x = self.dropout(x)
         x = self.dense(x)
@@ -31,6 +34,7 @@ class RobertaClassificationHead(nn.Module):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
+
 
 class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
     _keys_to_ignore_on_load_missing = [r"position_ids"]
@@ -62,8 +66,12 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
 
         # self.word_emb = torch.cat((w_emb, pad), dim=0).to(self.device)  --> from previous version, no more useful
         # for POS tagging, 17 one-hot vectors [0,24] + a zero tensor, for padding value
-        self.one_hot_pos = torch.cat((F.one_hot(torch.Tensor(range(17)).long(), num_classes=17),
-                                      torch.Tensor.zero_(torch.Tensor(1, 17))))
+        self.one_hot_pos = torch.cat(
+            (
+                F.one_hot(torch.Tensor(range(17)).long(), num_classes=17),
+                torch.Tensor.zero_(torch.Tensor(1, 17)),
+            )
+        )
         # final linear transformation, before softmax (our MLP)
 
         self.roberta = RobertaModel(config, add_pooling_layer=False)
@@ -73,28 +81,42 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
         self.post_init()
 
     def forward_syntax(self, batch_size, word, visit_order, parent_visit_order):
+        device = self.roberta.device
+
         # initialize tensor to store final representation
-        syntax_vector = torch.Tensor.zero_(torch.Tensor(batch_size, self.size))
+        syntax_vector = torch.Tensor.zero_(torch.Tensor(batch_size, self.size)).to(
+            device
+        )
         # from [tweet, tweet_trees, node] to [trees, node], for each type of data
         # tensor to access to different items
-        std = torch.Tensor(range(len(word))).long()
+        std = torch.Tensor(range(len(word))).long().to(device)
 
         # TOP DOWN FILTERING
         # resulting representation for each word from TOP-DOWN filtering
         # 2 silly dimension, useful for PAD elements and "parent of the root" and parent of pad nodes.
         # Same purpose in every tensor of embeddings
-        s_vect = torch.Tensor.zero_(torch.Tensor(len(word), len(word[0]), self.size))
+        s_vect = torch.Tensor.zero_(
+            torch.Tensor(len(word), len(word[0]), self.size)
+        ).to(device)
         # tensor to save memory-cells in the RecNN for each word from TOP-DOWN filtering
-        c_vect = torch.Tensor.zero_(torch.Tensor(len(word), len(word[0]), self.size))
+        c_vect = torch.Tensor.zero_(
+            torch.Tensor(len(word), len(word[0]), self.size)
+        ).to(device)
         # follow visit ordering fixed in the dataset, previous state is stored in the parent position (for both s and c)
         for i in range(len(visit_order[0])):
             vo = visit_order[:, i].long()
             pvo = parent_visit_order[:, i].long()
-            s_vect[std, vo], c_vect[std, vo] = self.cell_topdown(word[std, vo], (s_vect[std, pvo], c_vect[std, pvo]))
+            s_vect[std, vo], c_vect[std, vo] = self.cell_topdown(
+                word[std, vo], (s_vect[std, pvo], c_vect[std, pvo])
+            )
 
         # initialize vectors for BOTTOM-UP procedure
-        h_vect = torch.Tensor.zero_(torch.Tensor(len(word), len(word[0]), self.size))
-        c_vect = torch.Tensor.zero_(torch.Tensor(len(word), len(word[0]), self.size))
+        h_vect = torch.Tensor.zero_(
+            torch.Tensor(len(word), len(word[0]), self.size)
+        ).to(device)
+        c_vect = torch.Tensor.zero_(
+            torch.Tensor(len(word), len(word[0]), self.size)
+        ).to(device)
 
         # first initialization: take vector from top-down procedure and pass all to the "move up" network: in this way,
         # leaves are initialized
@@ -109,7 +131,8 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
             # take h and c from previous" child in children chain (store in father position), take x from the child in exam
             h_vect[std, pvo], c_vect[std, pvo] = self.cell_bottomup(
                 torch.cat((s_vect[std, pvo], x_vect[std, vo]), dim=1),
-                (h_vect[std, pvo], c_vect[std, pvo]))
+                (h_vect[std, pvo], c_vect[std, pvo]),
+            )
             # update x every time
             x_vect[std, pvo] = self.act_move_up(self.move_up(h_vect[std, pvo]))
 
@@ -119,7 +142,6 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
         # Final LSTM!
 
         return syntax_vector
-
 
     def forward(
         self,
@@ -139,7 +161,7 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
         pos: Optional[torch.LongTensor] = None,
         visit_order: Optional[torch.LongTensor] = None,
         parent_visit_order: Optional[torch.LongTensor] = None,
-        pad_mask_trees: Optional[torch.FloatTensor] = None
+        pad_mask_trees: Optional[torch.FloatTensor] = None,
     ) -> Union[Tuple[torch.Tensor], SequenceClassifierOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -147,7 +169,9 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
             config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
         """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
 
         outputs = self.roberta(
             input_ids,
@@ -159,34 +183,49 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-
         )
+
+        device = self.roberta.device
 
         batch_size = input_ids.size()[0]
         # number of trees for each tweet
         # number of tokens for each tree
-        word_representation = torch.Tensor.zero_(torch.Tensor(outputs.last_hidden_state.size()))
-        std = torch.Tensor(range(outputs.last_hidden_state.size()[0])).long()
+        word_representation = torch.Tensor.zero_(
+            torch.Tensor(outputs.last_hidden_state.size())
+        ).to(device)
+        std = torch.Tensor(range(outputs.last_hidden_state.size()[0])).long().to(device)
 
         for idx in range(outputs.last_hidden_state.size()[1]):
-            word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] = word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] + outputs.last_hidden_state[:, idx, :]
+            word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :] = (
+                word_representation[std, map_tokbert_to_tokparse[:, idx].long(), :]
+                + outputs.last_hidden_state[:, idx, :]
+            )
 
         batch_size = input_ids.size()[0]
         n_tokens_bert = input_ids.size()[1]
 
-        #input_ids = input_ids.reshape(batch_size * n_trees, n_tokens_bert)
+        # input_ids = input_ids.reshape(batch_size * n_trees, n_tokens_bert)
         map_attention = map_attention.reshape(batch_size, n_tokens_bert, 1)
-        divisors = divisors.reshape(batch_size, n_tokens_bert, 1) 
+        divisors = divisors.reshape(batch_size, n_tokens_bert, 1)
         for idx in range(word_representation.size()[1]):
-            print(idx)
-            word_representation[:, idx, :] = word_representation[:, idx, :] * map_attention[:, idx].expand(
-                map_attention[:, idx].size()[0], word_representation[:, idx, :].size()[1])
-            word_representation[:, idx, :] = word_representation[:, idx, :] / divisors[:, idx].expand(
-                divisors[:, idx].size()[0], word_representation[:, idx, :].size()[1])
+            # print(idx)
+            word_representation[:, idx, :] = word_representation[
+                :, idx, :
+            ] * map_attention[:, idx].expand(
+                map_attention[:, idx].size()[0],
+                word_representation[:, idx, :].size()[1],
+            )
+            word_representation[:, idx, :] = word_representation[:, idx, :] / divisors[
+                :, idx
+            ].expand(
+                divisors[:, idx].size()[0], word_representation[:, idx, :].size()[1]
+            )
 
         # extract tweet "syntactical" embedding and give it in input to final MLP
-        class_vector = self.forward_syntax(batch_size, word_representation, visit_order, parent_visit_order)
-        #sequence_output = outputs[0]
+        class_vector = self.forward_syntax(
+            batch_size, word_representation, visit_order, parent_visit_order
+        )
+        # sequence_output = outputs[0]
         logits = self.classifier(class_vector)
 
         loss = None
@@ -194,7 +233,9 @@ class SyntaxLMSequenceClassification(RobertaPreTrainedModel):
             if self.config.problem_type is None:
                 if self.num_labels == 1:
                     self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+                elif self.num_labels > 1 and (
+                    labels.dtype == torch.long or labels.dtype == torch.int
+                ):
                     self.config.problem_type = "single_label_classification"
                 else:
                     self.config.problem_type = "multi_label_classification"
