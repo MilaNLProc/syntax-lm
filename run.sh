@@ -1,5 +1,4 @@
 export TASK_NAME=cola
-export COMET_API_KEY=n8jLPmZqhs7Xs96UlkTGdIk5p
 export CUDA_VISIBLE_DEVICES="0"
 export WANDB_PROJECT=syntax_lm
 export WANDB_ENTITY=pragmatics-embedding
