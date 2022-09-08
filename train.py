@@ -24,6 +24,7 @@ import random
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
+import wandb
 
 
 from dep_parser import DepParser
@@ -323,6 +324,12 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
+    wandb.init(
+        project=os.environ["WANDB_PROJECT"],
+        entity=os.environ["WANDB_ENTITY"],
+        name=training_args.run_name
+    )
+
     # Get the datasets: you can either provide your own CSV/JSON training and evaluation files (see below)
     # or specify a GLUE benchmark task (the dataset will be downloaded automatically from the datasets Hub).
     #
@@ -445,6 +452,7 @@ def main():
     )
 
     if args.use_syntax:
+        logger.info("Using syntax encoder!!!")
         model = SyntaxLMSequenceClassification.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -527,6 +535,18 @@ def main():
         )
     max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
+    def preprocess_function_base(examples):
+        # Tokenize the texts
+        args = (
+            (examples[sentence1_key],) if sentence2_key is None else (examples[sentence1_key], examples[sentence2_key])
+        )
+        result = tokenizer(*args, padding=padding, max_length=max_seq_length, truncation=True)
+
+        # Map labels to IDs (not necessary for GLUE tasks)
+        if label_to_id is not None and "label" in examples:
+            result["label"] = [(label_to_id[l] if l != -1 else -1) for l in examples["label"]]
+        return result
+
     def preprocess_function(examples):
         max_length = max_seq_length
         # print(examples[sentence1_key])
@@ -573,13 +593,25 @@ def main():
             ]
         return result
 
+    # logger.info("Sampling first 100 samples")
+    #for k in raw_datasets.keys():
+    #    raw_datasets[k] = raw_datasets[k].select(range(50))
+
     with training_args.main_process_first(desc="dataset map pre-processing"):
-        raw_datasets = raw_datasets.map(
-            preprocess_function,
-            batched=False,
-            load_from_cache_file=not data_args.overwrite_cache,
-            desc="Running tokenizer on dataset",
-        )
+        if args.use_syntax:
+            raw_datasets = raw_datasets.map(
+                preprocess_function,
+                batched=False,
+                load_from_cache_file=not data_args.overwrite_cache,
+                desc="Running tokenizer on dataset",
+            )
+        else:
+            raw_datasets = raw_datasets.map(
+                preprocess_function_base,
+                batched=True,
+                load_from_cache_file=not data_args.overwrite_cache,
+                desc="Running tokenizer on dataset",
+            )
     if training_args.do_train:
         if "train" not in raw_datasets:
             raise ValueError("--do_train requires a train dataset")
